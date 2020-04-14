@@ -52,7 +52,6 @@ void wifiSetup() {
   }
 }
 
-// sensor value is 736 on air - value do not depend on support voltage
 void setup() {
   int currentValue = analogRead(A0);
 
