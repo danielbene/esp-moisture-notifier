@@ -11,19 +11,20 @@ char event[] = "";      // name of the event to trigger
 */
 
 #define SEC 1000000.0
-#define SLEEP_DURATION 4 * 60 * 60 * SEC
-#define DRYNESS_ALARM_VALUE 500
-#define DEBUG true
+#define SLEEP_DURATION 1 * 60 * 60 * SEC
+#define DRYNESS_ALARM_VALUE 100
+#define DEBUG false
 
 WiFiClient client;
 HTTPClient http;
 
-boolean triggerEvent() {
+boolean triggerEvent(int value) {
   boolean isSuccess = false;
   String url = "http://maker.ifttt.com/trigger/";
   url += event;
   url += "/with/key/";
   url += key;
+  url += "?" + value;
 
   http.begin(client, url);
   int httpCode = http.GET();
@@ -61,10 +62,10 @@ void setup() {
     Serial.println(currentValue);
   }
 
-  if (currentValue < DRYNESS_ALARM_VALUE) {
+  if (currentValue > DRYNESS_ALARM_VALUE) {
     wifiSetup();
 
-    if(triggerEvent()){
+    if(triggerEvent(currentValue)){
       if (DEBUG) Serial.println("Successfully sent!");
     } else {
       if (DEBUG) Serial.println("Failed!");

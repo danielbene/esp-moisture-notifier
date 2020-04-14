@@ -7,3 +7,7 @@ Hardware is a D1-mini, with a capacitive soil moisture sensor, supplied by a 186
 PRO TIP: you can make the sensor's smds waterproof with nail polish.
 
 Calibration is key when using moisture sensor. The values differ based on many aspects (soil denseness, saltness, sensor position, depth etc.). Be sure to find out the proper value for the `DRYNESS_ALARM_VALUE` before you trust the plant's life on the system.
+
+~730 - air (basically no wetness - may vary based on humidity)
+~295 - water (value lowers with more surface covered)
+~480 - moderately wet soil
