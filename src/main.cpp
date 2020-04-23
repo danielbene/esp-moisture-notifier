@@ -10,13 +10,19 @@ char key[] = "";        // from this page https://ifttt.com/maker_webhooks/setti
 char event[] = "";      // name of the event to trigger
 */
 
-#define SEC 1000000.0
-#define SLEEP_DURATION 1 * 60 * 60 * SEC
-#define DRYNESS_ALARM_VALUE 100
-#define DEBUG false
+#define SLEEP_HOURS 1
+#define DRYNESS_ALARM_VALUE 100 // the higher the value, the dryer the soil (water value = ~300, air value = ~730 with my sensor)
+#define DEBUG true
 
 WiFiClient client;
 HTTPClient http;
+
+double getSleepValue() {
+  double sec = 1000000.0;
+  double hour = 60 * 60 * sec;
+
+  return SLEEP_HOURS * hour;
+}
 
 boolean triggerEvent(int value) {
   boolean isSuccess = false;
@@ -24,7 +30,11 @@ boolean triggerEvent(int value) {
   url += event;
   url += "/with/key/";
   url += key;
-  url += "?" + value;
+  url += "?value1=";
+  url += value;
+  // url += "&value2=xyz"
+
+  if (DEBUG) Serial.println(url);
 
   http.begin(client, url);
   int httpCode = http.GET();
@@ -74,7 +84,7 @@ void setup() {
 
   if (DEBUG) Serial.println("Going to sleep...");
   delay(100);
-  ESP.deepSleep(SLEEP_DURATION);
+  ESP.deepSleep(getSleepValue());
 }
 
 void loop() {
