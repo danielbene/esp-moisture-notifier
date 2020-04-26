@@ -56,14 +56,28 @@ boolean triggerEvent(char event[]) {
   return triggerEvent(event, -1);
 }
 
+void deepSleep() {
+  delay(100);
+  ESP.deepSleep(getSleepValue());
+}
+
 void wifiSetup() {
+  int retries = 0;
+
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
 
   WiFi.begin(ssid, password);
+
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    if (retries < 20) {
+      delay(500);
+      retries++;
+    } else {
+      // if connection cannot be established than go to sleep - otherwise it dries the battery out
+      deepSleep();
+    }
   }
 }
 
@@ -77,8 +91,7 @@ void setup() {
     triggerEvent(notify_event, currentValue);
   }
 
-  delay(100);
-  ESP.deepSleep(getSleepValue());
+  deepSleep();
 }
 
 void loop() {
