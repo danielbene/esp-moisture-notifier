@@ -4,15 +4,15 @@
 
 #include "local.h"
 /* CONTENTS OF LOCAL.H
-char ssid[] = "";       // your network SSID (name)
-char password[] = "";   // your network key
-char key[] = "";        // from this page https://ifttt.com/maker_webhooks/settings - get the token from the URL
-char event[] = "";      // name of the event to trigger
+char ssid[] = "";               // your network SSID (name)
+char password[] = "";           // your network key
+char key[] = "";                // from this page https://ifttt.com/maker_webhooks/settings - get the token from the URL
+char log_event[] = "";          // name of the event to trigger
+char notify_event[] = "";       // name of the event to trigger
 */
 
-#define SLEEP_HOURS 1
-#define DRYNESS_ALARM_VALUE 100 // the higher the value, the dryer the soil (water value = ~300, air value = ~730 with my sensor)
-#define DEBUG true
+#define SLEEP_HOURS 8
+#define DRYNESS_ALARM_VALUE 500 // the higher the value, the dryer the soil (water value = ~300, air value = ~730 with my sensor)
 
 WiFiClient client;
 HTTPClient http;
@@ -24,17 +24,18 @@ double getSleepValue() {
   return SLEEP_HOURS * hour;
 }
 
-boolean triggerEvent(int value) {
+boolean triggerEvent(char event[], int value) {
   boolean isSuccess = false;
   String url = "http://maker.ifttt.com/trigger/";
   url += event;
   url += "/with/key/";
   url += key;
-  url += "?value1=";
-  url += value;
-  // url += "&value2=xyz"
 
-  if (DEBUG) Serial.println(url);
+  if (value != -1) {
+    url += "?value1=";
+    url += value;
+    // url += "&value2=xyz"
+  }
 
   http.begin(client, url);
   int httpCode = http.GET();
@@ -51,6 +52,10 @@ boolean triggerEvent(int value) {
   return isSuccess;
 }
 
+boolean triggerEvent(char event[]) {
+  return triggerEvent(event, -1);
+}
+
 void wifiSetup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
@@ -58,31 +63,20 @@ void wifiSetup() {
 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    if (DEBUG) Serial.print(".");
     delay(500);
   }
 }
 
 void setup() {
   int currentValue = analogRead(A0);
+  wifiSetup();
 
-  if (DEBUG) {
-    Serial.begin(115200);
-    Serial.println();
-    Serial.println(currentValue);
-  }
+  triggerEvent(log_event, currentValue);
 
   if (currentValue > DRYNESS_ALARM_VALUE) {
-    wifiSetup();
-
-    if(triggerEvent(currentValue)){
-      if (DEBUG) Serial.println("Successfully sent!");
-    } else {
-      if (DEBUG) Serial.println("Failed!");
-    }
+    triggerEvent(notify_event);
   }
 
-  if (DEBUG) Serial.println("Going to sleep...");
   delay(100);
   ESP.deepSleep(getSleepValue());
 }
