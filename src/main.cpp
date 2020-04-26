@@ -6,9 +6,9 @@
 /* CONTENTS OF LOCAL.H
 char ssid[] = "";               // your network SSID (name)
 char password[] = "";           // your network key
-char key[] = "";                // from this page https://ifttt.com/maker_webhooks/settings - get the token from the URL
-char log_event[] = "";          // name of the event to trigger
-char notify_event[] = "";       // name of the event to trigger
+char key[] = "";                // from this page https://ifttt.com/maker_webhooks/settings - get the token from the specified URL on the page
+char log_event[] = "";          // name of the logging event to trigger
+char notify_event[] = "";       // name of the notification event to trigger
 */
 
 #define SLEEP_HOURS 8
@@ -34,7 +34,7 @@ boolean triggerEvent(char event[], int value) {
   if (value != -1) {
     url += "?value1=";
     url += value;
-    // url += "&value2=xyz"
+    // secondary value like this: url += "&value2=xyz"
   }
 
   http.begin(client, url);
@@ -74,7 +74,7 @@ void setup() {
   triggerEvent(log_event, currentValue);
 
   if (currentValue > DRYNESS_ALARM_VALUE) {
-    triggerEvent(notify_event);
+    triggerEvent(notify_event, currentValue);
   }
 
   delay(100);
