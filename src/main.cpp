@@ -11,7 +11,7 @@ char log_event[] = "";          // name of the logging event to trigger
 char notify_event[] = "";       // name of the notification event to trigger
 */
 
-#define DRYNESS_ALARM_VALUE 500 // the higher the value, the dryer the soil (water value = ~300, air value = ~730 with my sensor)
+#define DRYNESS_ALARM_VALUE 500 // the higher the value, the dryer the soil (water ~300, air ~730)
 
 WiFiClient client;
 HTTPClient http;
@@ -50,7 +50,7 @@ boolean triggerEvent(char event[]) {
 
 void deepSleep() {
   delay(100);
-  // max duration is about 3.5h because of the int64 usage - deepSleepMax() will calculate the correct value
+  // longest deepsleep that can be reached without external parts (needs arduino core 2.4.1+ / ~3,5h)
   ESP.deepSleep(ESP.deepSleepMax());
 }
 
