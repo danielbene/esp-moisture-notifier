@@ -16,6 +16,12 @@ char notify_event[] = "";       // name of the notification event to trigger
 WiFiClient client;
 HTTPClient http;
 
+// ---WIP:POWER_MANAGEMENT--------
+IPAddress ip(192, 168, 100, 210);
+IPAddress gateway(192, 168, 100, 1);
+IPAddress subnet(255, 255, 255, 0);
+// ---WIP:POWER_MANAGEMENT--------
+
 boolean triggerEvent(char event[], int value) {
   boolean isSuccess = false;
   String url = "http://maker.ifttt.com/trigger/";
@@ -49,9 +55,17 @@ boolean triggerEvent(char event[]) {
 }
 
 void deepSleep() {
-  delay(100);
-  // longest deepsleep that can be reached without external parts (needs arduino core 2.4.1+ / ~3,5h)
-  ESP.deepSleep(ESP.deepSleepMax());
+  // theoretically deepSleepMax() is the longest value that can be reached without external parts (needs arduino core 2.4.1+ / ~3,5h)
+  // that caused issues for me, so using stable 3 hours as maximum sleep timer
+  u_int64_t maxSleep = 3 * 3600000000;
+
+  // ---WIP:POWER_MANAGEMENT--------
+  WiFi.disconnect( true );
+  delay( 1 );
+  WiFi.mode( WIFI_OFF );
+  delay(10);
+  ESP.deepSleep(maxSleep, WAKE_RF_DISABLED);
+  // ---WIP:POWER_MANAGEMENT--------
 }
 
 void wifiSetup() {
@@ -60,6 +74,10 @@ void wifiSetup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
+
+  // ---WIP:POWER_MANAGEMENT--------
+  WiFi.config(ip, gateway, subnet);
+  // ---WIP:POWER_MANAGEMENT--------
 
   WiFi.begin(ssid, password);
 
@@ -75,7 +93,20 @@ void wifiSetup() {
 }
 
 void setup() {
+  // ---WIP:POWER_MANAGEMENT--------
+  WiFi.mode(WIFI_OFF);
+  WiFi.forceSleepBegin();
+  delay(1);
+  // ---WIP:POWER_MANAGEMENT--------
+
   int currentValue = analogRead(A0);
+
+  // ---WIP:POWER_MANAGEMENT--------
+  WiFi.forceSleepWake();
+  delay(1);
+  WiFi.persistent(false);
+  // ---WIP:POWER_MANAGEMENT--------
+
   wifiSetup();
 
   triggerEvent(log_event, currentValue);
