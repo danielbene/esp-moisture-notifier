@@ -60,9 +60,9 @@ void deepSleep() {
   u_int64_t maxSleep = 3 * 3600000000;
 
   // ---WIP:POWER_MANAGEMENT--------
-  WiFi.disconnect( true );
-  delay( 1 );
-  WiFi.mode( WIFI_OFF );
+  WiFi.disconnect(true);
+  delay(1);
+  WiFi.mode(WIFI_OFF);
   delay(10);
   ESP.deepSleep(maxSleep, WAKE_RF_DISABLED);
   // ---WIP:POWER_MANAGEMENT--------
@@ -72,8 +72,6 @@ void wifiSetup() {
   int retries = 0;
 
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
 
   // ---WIP:POWER_MANAGEMENT--------
   WiFi.config(ip, gateway, subnet);
