@@ -5,12 +5,17 @@
 #include <ESP8266WiFi.h>
 
 /**
- *	ESPPowerManager implements practices in connection with power efficiency for the
- *	esp8266 based chips. The main motivation is to get the most lifespan out of the
- *	battery cells, while keeping the full functionality.
+ * 	@file ESPPowerManager.h
  *
- * 	Note: turned off wifi module helps with more precise analog readings because
+ *	@brief ESPPowerManager implements practices to get the most lifespan out of
+ *	battery cells, while keeping the full functionality of the esp8266 chips.
+ *
+ *	Lib was inspired by the esp energy efficiency posts on https://www.bakke.online
+ *
+ * 	Note: turned off wifi module also helps with more precise analog readings because
  * 	voltage do not gets fluctuated.
+ *
+ * 	@author Dániel Bene - https://github.com/danielbene
  */
 class ESPPowerManager {
 	public:
@@ -22,12 +27,22 @@ class ESPPowerManager {
 		void deepSleep(u_int64_t sleepMicroSecs);
 		void wakeWifi();
 		void setupWifi();
+
 	private:
 		String ssid;
 		String password;
 		IPAddress ip;
 		IPAddress gateway;
 		IPAddress subnet;
+		uint32_t calculateCRC32(const uint8_t *data, size_t length);
+		boolean isRouterDataValid();
+		struct {
+			uint32_t crc32;		// validator checksum
+			uint8_t channel;	// wifi channel
+			uint8_t bssid[6];	// MAC address of the router
+			uint8_t padding;	// additional byte for 12
+		} routerData;
+
 };
 
 #endif

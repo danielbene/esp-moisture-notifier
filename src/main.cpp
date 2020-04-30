@@ -55,11 +55,17 @@ boolean triggerEvent(char event[]) {
 
 void setup() {
 	powerManager.begin();
+	Serial.begin(115200);
 
 	int currentValue = analogRead(A0);
 
+	Serial.println();
+	Serial.println(currentValue);
+
 	powerManager.wakeWifi();
 	powerManager.setupWifi();
+
+	Serial.println("Wifi connected");
 
 	triggerEvent(log_event, currentValue);
 
@@ -67,6 +73,7 @@ void setup() {
 		triggerEvent(notify_event, currentValue);
 	}
 
+	Serial.println("Going to sleep");
 	powerManager.deepSleep();
 }
 
