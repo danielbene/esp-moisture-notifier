@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 
 /**
  * 	@file ESPPowerManager.h
@@ -10,7 +11,7 @@
  *	@brief ESPPowerManager implements practices to get the most lifespan out of
  *	battery cells, while keeping the full functionality of the esp8266 chips.
  *
- *	Lib was inspired by the esp energy efficiency posts on https://www.bakke.online
+ *	Lib was inspired by the esp posts on https://www.bakke.online
  *
  * 	Note: turned off wifi module also helps with more precise analog readings because
  * 	voltage do not gets fluctuated.
@@ -19,7 +20,7 @@
  */
 class ESPPowerManager {
 	public:
-		ESPPowerManager(String ssid, String password, IPAddress ip, IPAddress gateway, IPAddress subnet);
+		ESPPowerManager(String ssid, String password, IPAddress ip, IPAddress gateway, IPAddress subnet, IPAddress dns);
 		// deepSleepMax() - that's about ~3.5h - caused issues for me, so using stable 3 hours as maximum sleep timer
 		u_int64_t MAX_SLEEP = 3 * 3600000000;
 		void begin();
@@ -32,6 +33,7 @@ class ESPPowerManager {
 		String ssid;
 		String password;
 		IPAddress ip;
+		IPAddress dns;
 		IPAddress gateway;
 		IPAddress subnet;
 		uint32_t calculateCRC32(const uint8_t *data, size_t length);
