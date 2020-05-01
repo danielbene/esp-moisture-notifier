@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <ESP8266HTTPClient.h>
-#include <ESP8266WiFi.h>
 #include "ESPPowerManager.h"
 
 #include "local.h"
@@ -13,15 +12,16 @@ char notify_event[] = "";           // name of the notification event to trigger
 IPAddress ip(192, 168, x, x);       // static (not used) ip address for this device
 IPAddress gateway(192, 168, x, x);  // address of the network router
 IPAddress subnet(255, 255, 255, 0); // subnet mask of the local network
+IPAddress dns(1, 1, 1, 1);			// DNS server address
 */
 
 #define DRYNESS_ALARM_VALUE 500		// the higher the value, the dryer the soil (water ~300, air ~730)
 
-ESPPowerManager powerManager(ssid, password, ip, gateway, subnet);
+ESPPowerManager powerManager(ssid, password, ip, gateway, subnet, dns);
 HTTPClient http;
 WiFiClient client;
 
-boolean triggerEvent(char event[], int value) {
+boolean triggerEvent(String event, int value) {
 	boolean isSuccess = false;
 	String url = "http://maker.ifttt.com/trigger/";
 	url += event;
@@ -49,23 +49,17 @@ boolean triggerEvent(char event[], int value) {
 	return isSuccess;
 }
 
-boolean triggerEvent(char event[]) {
+boolean triggerEvent(String event) {
 	return triggerEvent(event, -1);
 }
 
 void setup() {
 	powerManager.begin();
-	Serial.begin(115200);
 
 	int currentValue = analogRead(A0);
 
-	Serial.println();
-	Serial.println(currentValue);
-
 	powerManager.wakeWifi();
 	powerManager.setupWifi();
-
-	Serial.println("Wifi connected");
 
 	triggerEvent(log_event, currentValue);
 
@@ -73,7 +67,6 @@ void setup() {
 		triggerEvent(notify_event, currentValue);
 	}
 
-	Serial.println("Going to sleep");
 	powerManager.deepSleep();
 }
 

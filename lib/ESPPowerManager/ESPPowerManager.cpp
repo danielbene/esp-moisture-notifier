@@ -1,11 +1,12 @@
 #include "ESPPowerManager.h"
 
-ESPPowerManager::ESPPowerManager(String ssid, String password, IPAddress ip, IPAddress gateway, IPAddress subnet) {
+ESPPowerManager::ESPPowerManager(String ssid, String password, IPAddress ip, IPAddress gateway, IPAddress subnet, IPAddress dns) {
 	this->ssid = ssid;
 	this->password = password;
 	this->ip = ip;
 	this->gateway = gateway;
 	this->subnet = subnet;
+	this->dns = dns;
 }
 
 // initial RF modul turn off - must be called first in setup
@@ -15,7 +16,7 @@ void ESPPowerManager::begin() {
 	delay(1);
 }
 
-// reactivating the module and disabling network persistance
+// reactivating RF and disabling network persistance
 void ESPPowerManager::wakeWifi() {
 	WiFi.forceSleepWake();
 	delay(1);
@@ -27,16 +28,14 @@ void ESPPowerManager::setupWifi() {
 	boolean isValidRouterData = isRouterDataValid();
 
 	WiFi.mode(WIFI_STA);
-	WiFi.config(ip, gateway, subnet);
+	WiFi.config(ip, gateway, subnet, dns);
 
 	if (isValidRouterData) {
 		// saved data ok - quick connect
-		WiFi.begin(ssid, password, routerData.channel, routerData.bssid, true );
-		Serial.println("Starting quick connect");
+		WiFi.begin(ssid, password, routerData.channel, routerData.bssid, true);
 	} else {
 		// saved data invalid - regular connect
 		WiFi.begin(ssid, password);
-		Serial.println("Starting regular connect");
 	}
 
 	while (WiFi.status() != WL_CONNECTED) {
@@ -52,14 +51,10 @@ void ESPPowerManager::setupWifi() {
 			delay(10);
 			WiFi.begin(ssid, password);
 
-			// possibly a change made the saved data useless
-			isValidRouterData = false;
-
-			Serial.println("Quick connect failed - try regular");
+			isValidRouterData = false;	// saved data out of date - flag for invalid
 		}
 
 		if (retries == 300) {
-			Serial.println("Connection timeout - going to sleep");
 			// after 15 sec go to sleep
 			deepSleep();
 		}
@@ -68,21 +63,11 @@ void ESPPowerManager::setupWifi() {
 	}
 
 	if (!isValidRouterData){
-		// connestion is successfull - save router data to rtc memory if the existing not usable
+		// connestion is successfull - save router data to rtc memory - the existing not usable
 		routerData.channel = WiFi.channel();
 		memcpy(routerData.bssid, WiFi.BSSID(), 6);	// Copy 6 bytes of BSSID (AP's MAC address)
 		routerData.crc32 = calculateCRC32(((uint8_t*)&routerData) + 4, sizeof(routerData) - 4);
 		ESP.rtcUserMemoryWrite(0, (uint32_t*)&routerData, sizeof(routerData));
-
-		Serial.print("Saving data to rtc memory: ");
-		Serial.print(routerData.channel);
-		Serial.print(" / ");
-		Serial.print(routerData.bssid[0]);
-		Serial.print(routerData.bssid[1]);
-		Serial.print(routerData.bssid[2]);
-		Serial.print(routerData.bssid[3]);
-		Serial.print(routerData.bssid[4]);
-		Serial.println(routerData.bssid[5]);
 	}
 }
 
@@ -95,7 +80,6 @@ void ESPPowerManager::deepSleep(u_int64_t sleepMicroSecs) {
 	WiFi.disconnect(true);
 	delay(1);
 	WiFi.mode(WIFI_OFF);
-	delay(10);
 
 	if (sleepMicroSecs != 0) {
 		ESP.deepSleep(sleepMicroSecs, WAKE_RF_DISABLED);
