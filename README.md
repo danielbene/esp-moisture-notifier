@@ -9,7 +9,7 @@ Hardware is a D1-mini, with a capacitive soil moisture sensor, supplied by a 186
 ## ifttt
 Basically you need a connection between a webhook event (imagine this like a public html link) and your phone's IFTTT app. When the arduino calls that specific link, you will get a predefined notification to your phone. You can make logging too with the spreadsheet connection easily.
 
-The pictures below shows a test setup, you will need something like these modified to match your requirements. 
+The pictures below shows a test setup, you will need something like these modified to match your requirements.
 
 ![Notification](img/ifttt_notification.JPG) ![Log](img/ifttt_spreadsheet.JPG)
 
@@ -18,3 +18,7 @@ The pictures below shows a test setup, you will need something like these modifi
 Calibration is key when using a moisture sensor. The values differ based on many aspects (soil denseness, saltness, sensor position, depth etc.). Be sure to find out the proper value for the `DRYNESS_ALARM_VALUE` before you trust the plant's life on the system.
 
 PRO TIP: you can make the sensor's pcb sides, and smds waterproof with nail polish.
+
+## power-manager
+
+Errr... The project started as a simple moisture sensor, but that power manager lib was born out of it. That has so much value compared to a basic sensor's code. Nvm I just keep that here at the moment, and we will see where to go with it.
