@@ -65,9 +65,10 @@ void ESPPowerManager::setupWifi() {
 	if (!isValidRouterData){
 		// connestion is successfull - save router data to rtc memory - the existing not usable
 		routerData.channel = WiFi.channel();
-		memcpy(routerData.bssid, WiFi.BSSID(), 6);	// Copy 6 bytes of BSSID (AP's MAC address)
+		memcpy(routerData.bssid, WiFi.BSSID(), 6);
 		routerData.crc32 = calculateCRC32(((uint8_t*)&routerData) + 4, sizeof(routerData) - 4);
-		ESP.rtcUserMemoryWrite(0, (uint32_t*)&routerData, sizeof(routerData));
+		// memory offset read/write is 128 byte because of the OTA behaviour (read the doc/note on this method)
+		ESP.rtcUserMemoryWrite(33, (uint32_t*)&routerData, sizeof(routerData));
 	}
 }
 
@@ -109,7 +110,7 @@ uint32_t ESPPowerManager::calculateCRC32(const uint8_t *data, size_t length) {
 }
 
 boolean ESPPowerManager::isRouterDataValid() {
-	if (ESP.rtcUserMemoryRead(0, (uint32_t*)&routerData, sizeof(routerData))) {
+	if (ESP.rtcUserMemoryRead(33, (uint32_t*)&routerData, sizeof(routerData))) {
 		// Calculate the CRC of what we just read from RTC memory, but skip the first 4 bytes as that's the checksum itself.
 		uint32_t crc = calculateCRC32(((uint8_t*)&routerData) + 4, sizeof(routerData) - 4);
 		if (crc == routerData.crc32) {

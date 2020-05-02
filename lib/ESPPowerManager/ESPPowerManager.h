@@ -42,7 +42,7 @@ class ESPPowerManager {
 			uint32_t crc32;		// validator checksum
 			uint8_t channel;	// wifi channel
 			uint8_t bssid[6];	// MAC address of the router
-			uint8_t padding;	// additional byte for 12
+			uint8_t padding;	// additional byte for 12 total
 		} routerData;
 
 };
