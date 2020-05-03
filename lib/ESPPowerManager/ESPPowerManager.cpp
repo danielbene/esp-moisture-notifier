@@ -9,21 +9,42 @@ ESPPowerManager::ESPPowerManager(String ssid, String password, IPAddress ip, IPA
 	this->dns = dns;
 }
 
-// initial RF modul turn off - must be called first in setup
-void ESPPowerManager::begin() {
-	WiFi.mode(WIFI_OFF);
-	WiFi.forceSleepBegin();
-	delay(1);
+void ESPPowerManager::beginBasicMode() {
+	sleepWifi();
+	isEDSMode = false;
 }
 
-// reactivating RF and disabling network persistance
-void ESPPowerManager::wakeWifi() {
-	WiFi.forceSleepWake();
-	delay(1);
-	WiFi.persistent(false);
+void ESPPowerManager::beginEDSMode(uint16_t checksumNumber, uint16_t sleepHours) {
+	sleepWifi();
+	isEDSMode = true;
+
+	if (ESP.rtcUserMemoryRead(DS_CYCLE_MEMORY_OFFSET, (uint32_t*)&extendedDSData, sizeof(extendedDSData))) {
+		if (extendedDSData.manualChecksum != checksumNumber) {
+			// first run, or memory got corrupted
+			extendedDSData.manualChecksum = checksumNumber;
+			extendedDSData.cycleCounter = 1;
+		} else {
+			extendedDSData.cycleCounter += 1;
+
+			if (extendedDSData.cycleCounter > sleepHours) {
+				extendedDSData.cycleCounter = 0;
+				ESP.rtcUserMemoryWrite(DS_CYCLE_MEMORY_OFFSET, (uint32_t*)&extendedDSData, sizeof(extendedDSData));
+				return;	// reached specified sleep count, let the jobs run
+			}
+		}
+
+		ESP.rtcUserMemoryWrite(DS_CYCLE_MEMORY_OFFSET, (uint32_t*)&extendedDSData, sizeof(extendedDSData));
+		deepSleep(ONE_HOUR);
+	}
 }
 
 void ESPPowerManager::setupWifi() {
+	setupWifi(MAX_SLEEP);
+}
+
+void ESPPowerManager::setupWifi(u_int64_t sleepMicroSecs) {
+	wakeWifi();
+
 	int retries = 0;
 	boolean isValidRouterData = isRouterDataValid();
 
@@ -56,7 +77,7 @@ void ESPPowerManager::setupWifi() {
 
 		if (retries == 300) {
 			// after 15 sec go to sleep
-			deepSleep();
+			deepSleep(sleepMicroSecs);
 		}
 
 		delay(50);
@@ -65,9 +86,9 @@ void ESPPowerManager::setupWifi() {
 	if (!isValidRouterData){
 		// connestion is successfull - save router data to rtc memory - the existing not usable
 		routerData.channel = WiFi.channel();
-		memcpy(routerData.bssid, WiFi.BSSID(), 6);	// Copy 6 bytes of BSSID (AP's MAC address)
+		memcpy(routerData.bssid, WiFi.BSSID(), 6);
 		routerData.crc32 = calculateCRC32(((uint8_t*)&routerData) + 4, sizeof(routerData) - 4);
-		ESP.rtcUserMemoryWrite(0, (uint32_t*)&routerData, sizeof(routerData));
+		ESP.rtcUserMemoryWrite(ROUTER_DATA_MEMORY_OFFSET, (uint32_t*)&routerData, sizeof(routerData));
 	}
 }
 
@@ -77,14 +98,16 @@ void ESPPowerManager::deepSleep() {
 }
 
 void ESPPowerManager::deepSleep(u_int64_t sleepMicroSecs) {
-	WiFi.disconnect(true);
-	delay(1);
-	WiFi.mode(WIFI_OFF);
+	turnOffWifi();
 
-	if (sleepMicroSecs != 0) {
-		ESP.deepSleep(sleepMicroSecs, WAKE_RF_DISABLED);
-	} else {
+	if (!isEDSMode) {
+		if (sleepMicroSecs != 0 && sleepMicroSecs < MAX_SLEEP) {
+			ESP.deepSleep(sleepMicroSecs, WAKE_RF_DISABLED);
+		}
+
 		ESP.deepSleep(MAX_SLEEP, WAKE_RF_DISABLED);
+	} else {
+		ESP.deepSleep(ONE_HOUR, WAKE_RF_DISABLED);
 	}
 }
 
@@ -109,7 +132,7 @@ uint32_t ESPPowerManager::calculateCRC32(const uint8_t *data, size_t length) {
 }
 
 boolean ESPPowerManager::isRouterDataValid() {
-	if (ESP.rtcUserMemoryRead(0, (uint32_t*)&routerData, sizeof(routerData))) {
+	if (ESP.rtcUserMemoryRead(ROUTER_DATA_MEMORY_OFFSET, (uint32_t*)&routerData, sizeof(routerData))) {
 		// Calculate the CRC of what we just read from RTC memory, but skip the first 4 bytes as that's the checksum itself.
 		uint32_t crc = calculateCRC32(((uint8_t*)&routerData) + 4, sizeof(routerData) - 4);
 		if (crc == routerData.crc32) {
@@ -118,4 +141,23 @@ boolean ESPPowerManager::isRouterDataValid() {
 	}
 
 	return false;
+}
+
+// reactivating RF and disabling network persistance
+void ESPPowerManager::wakeWifi() {
+	WiFi.forceSleepWake();
+	delay(1);
+	WiFi.persistent(false);
+}
+
+void ESPPowerManager::sleepWifi() {
+	WiFi.mode(WIFI_OFF);
+	WiFi.forceSleepBegin();
+	delay(1);
+}
+
+void ESPPowerManager::turnOffWifi() {
+	WiFi.disconnect(true);
+	delay(1);
+	WiFi.mode(WIFI_OFF);
 }
