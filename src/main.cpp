@@ -16,8 +16,7 @@ IPAddress dns(1, 1, 1, 1);			// DNS server address
 */
 
 #define DRYNESS_ALARM_VALUE 500		// the higher the value, the dryer the soil (water ~300, air ~730)
-#define SLEEP_USECS powerManager.MAX_SLEEP	// max 3h
-#define EDS_CHECKSUM 125			// [0, 254]
+//#define SLEEP_USECS powerManager.MAX_SLEEP
 
 ESPPowerManager powerManager(ssid, password, ip, gateway, subnet, dns);
 HTTPClient http;
@@ -56,12 +55,13 @@ boolean triggerEvent(String event) {
 }
 
 void setup() {
-	powerManager.begin();
+	//powerManager.beginBasicMode();
+	powerManager.beginEDSMode(54321, 8);
 
 	int currentValue = analogRead(A0);
 
-	powerManager.wakeWifi();
-	powerManager.setupWifi(SLEEP_USECS);
+	//powerManager.setupWifi(SLEEP_USECS);
+	powerManager.setupWifi();
 
 	triggerEvent(log_event, currentValue);
 
@@ -69,7 +69,8 @@ void setup() {
 		triggerEvent(notify_event, currentValue);
 	}
 
-	powerManager.deepSleep(SLEEP_USECS);
+	//powerManager.deepSleep(SLEEP_USECS);
+	powerManager.deepSleep();
 }
 
 void loop() {
