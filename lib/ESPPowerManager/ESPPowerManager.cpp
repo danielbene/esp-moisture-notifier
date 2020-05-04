@@ -27,7 +27,7 @@ void ESPPowerManager::beginEDSMode(uint16_t checksumNumber, uint16_t sleepHours)
 			extendedDSData.cycleCounter += 1;
 
 			if (extendedDSData.cycleCounter > sleepHours) {
-				extendedDSData.cycleCounter = 0;
+				extendedDSData.cycleCounter = 1;
 				ESP.rtcUserMemoryWrite(DS_CYCLE_MEMORY_OFFSET, (uint32_t*)&extendedDSData, sizeof(extendedDSData));
 				return;	// reached specified sleep count, let the jobs run
 			}
