@@ -15,7 +15,7 @@ IPAddress subnet(255, 255, 255, 0); // subnet mask of the local network
 IPAddress dns(1, 1, 1, 1);			// DNS server address
 */
 
-#define DRYNESS_ALARM_VALUE 500		// the higher the value, the dryer the soil (water ~300, air ~730)
+#define DRYNESS_ALARM_VALUE 600		// the higher the value, the dryer the soil (water ~300, air ~730)
 //#define SLEEP_USECS powerManager.MAX_SLEEP
 
 ESPPowerManager powerManager(ssid, password, ip, gateway, subnet, dns);
