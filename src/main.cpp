@@ -34,6 +34,7 @@ boolean notifyEvent(int value) {
 	if (http.begin(clientSecure, webhook_url)) {
 		http.addHeader("Content-Type", "application/json");
 
+		// TODO: add TS to content
 		String payload = "{ \"content\": \" Avocado needs a drink! Value: [" + String(value) + "]\" }";
 		int httpCode = http.POST(payload);
 		http.end();
