@@ -1,72 +1,91 @@
 #include <Arduino.h>
 #include <ESP8266HTTPClient.h>
-#include "ESPPowerManager.h"
+#include <WiFiClientSecure.h>
 
+#include "ESPPowerManager.h"
 #include "local.h"
 /* CONTENTS OF LOCAL.H
+#include <Arduino.h>
+#include <ESP8266HTTPClient.h>
+
 String ssid = "";                   // your network SSID (name)
 String password = "";               // your network key
-char key[] = "";                    // from this page https://ifttt.com/maker_webhooks/settings - get the token from the specified URL on the page
-char log_event[] = "";              // name of the logging event to trigger
-char notify_event[] = "";           // name of the notification event to trigger
+String discord_webhook_url = "";    // Discord channel webhook URL
+String sheets_webapp_url = "";      // Google sheets script deployment webapp URL
 IPAddress ip(192, 168, x, x);       // static (not used) ip address for this device
 IPAddress gateway(192, 168, x, x);  // address of the network router
 IPAddress subnet(255, 255, 255, 0); // subnet mask of the local network
-IPAddress dns(1, 1, 1, 1);			// DNS server address
+IPAddress dns(1, 1, 1, 1);          // DNS server address
 */
 
-#define DRYNESS_ALARM_VALUE 600		// the higher the value, the dryer the soil (water ~300, air ~730)
+#define DRYNESS_ALARM_VALUE 600	    // the higher the value, the dryer the soil (water ~300, air ~730)
+#define SENSOR_POWER_PIN D8
 //#define SLEEP_USECS powerManager.MAX_SLEEP
 
 ESPPowerManager powerManager(ssid, password, ip, gateway, subnet, dns);
-HTTPClient http;
-WiFiClient client;
+HTTPClient discordHttp, gSheetsHttp;
+WiFiClientSecure clientSecure;
 
-boolean triggerEvent(String event, int value) {
+boolean notifyEvent(int value) {
+	// TODO: cert - https://www.youtube.com/watch?v=Wm1xKj4bKsY
+	// https://github.com/maditnerd/discord_test/blob/master/discord_test_esp8266/discord.h
+	clientSecure.setInsecure();
 	boolean isSuccess = false;
-	String url = "http://maker.ifttt.com/trigger/";
-	url += event;
-	url += "/with/key/";
-	url += key;
 
-	if (value != -1) {
-		url += "?value1=";
-		url += value;
-		// secondary value like this: url += "&value2=xyz"
-	}
+	if (discordHttp.begin(clientSecure, discord_webhook_url)) {
+		discordHttp.addHeader("Content-Type", "application/json");
 
-	http.begin(client, url);
-	int httpCode = http.GET();
+		String payload = "{ \"content\": \" Avocado needs a drink! Value: [" + String(value) + "]\" }";
+		int httpCode = discordHttp.POST(payload);
+		discordHttp.end();
 
-	if (httpCode > 0) {
-		if (httpCode == 200) {
-			isSuccess = true;
-		} else {
-			isSuccess = false;
+		if (httpCode > 0) {
+			if (httpCode == 200 || httpCode == 204) {
+				isSuccess = true;
+			} else {
+				isSuccess = false;
+			}
 		}
 	}
 
-	http.end();
 	return isSuccess;
 }
 
-boolean triggerEvent(String event) {
-	return triggerEvent(event, -1);
+// for setting up google sheets api follow this manual:
+// https://github.com/StorageB/Google-Sheets-Logging/blob/master/README.md
+void spreadsheetValueLog(int value) {
+	gSheetsHttp.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+	if (gSheetsHttp.begin(clientSecure, sheets_webapp_url)) {
+			gSheetsHttp.addHeader("Content-Type", "application/json");
+
+			// TODO: extract sheet name to param
+			String payload = "{ \"sheet_name\": \"Sheet1\", \"values\": \"" + String(value) + "\" }";
+			gSheetsHttp.POST(payload);
+			gSheetsHttp.end();
+	}
 }
 
 void setup() {
+	//Serial.begin(115200);
 	//powerManager.beginBasicMode();
-	powerManager.beginEDSMode(54321, 8);
+	powerManager.beginEDSMode(48317, 12);
 
+	pinMode(SENSOR_POWER_PIN, OUTPUT);
+	digitalWrite(SENSOR_POWER_PIN, HIGH);
+	delay(50);  // sensor needs some time to init, or measurement will be incorrect
 	int currentValue = analogRead(A0);
+	digitalWrite(SENSOR_POWER_PIN, LOW);
 
 	//powerManager.setupWifi(SLEEP_USECS);
 	powerManager.setupWifi();
 
-	triggerEvent(log_event, currentValue);
+	if (WiFi.status() == WL_CONNECTED) {
+		if (currentValue > DRYNESS_ALARM_VALUE && !notifyEvent(currentValue)) {
+			// TODO: log error
+			//Serial.println("notify ERROR");
+		}
 
-	if (currentValue > DRYNESS_ALARM_VALUE) {
-		triggerEvent(notify_event, currentValue);
+		spreadsheetValueLog(currentValue);
 	}
 
 	//powerManager.deepSleep(SLEEP_USECS);
