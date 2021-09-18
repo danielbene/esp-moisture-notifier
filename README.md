@@ -6,12 +6,8 @@ Hardware is a D1-mini, with a capacitive soil moisture sensor, supplied by a 186
 
 ![Sensor connections](img/setup.jpg)
 
-## ifttt
-Basically you need a connection between a webhook event (imagine this like a public html link) and your phone's IFTTT app. When the arduino calls that specific link, you will get a predefined notification to your phone. You can make logging too with the spreadsheet connection easily.
-
-The pictures below shows a test setup, you will need something like these modified to match your requirements.
-
-![Notification](img/ifttt_notification.JPG) ![Log](img/ifttt_spreadsheet.JPG)
+## Discord/GoogleSheets
+Changed IFTTT for a native Discord webhook, and GoogleSheets implementation. (TODO: proper description)
 
 ## calibration
 
