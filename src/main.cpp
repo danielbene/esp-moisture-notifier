@@ -10,7 +10,8 @@
 
 String ssid = "";                   // your network SSID (name)
 String password = "";               // your network key
-String webhook_url = "";            // Discord channel webhook URL
+String discord_webhook_url = "";    // Discord channel webhook URL
+String sheets_webapp_url = "";      // Google sheets script deployment webapp URL
 IPAddress ip(192, 168, x, x);       // static (not used) ip address for this device
 IPAddress gateway(192, 168, x, x);  // address of the network router
 IPAddress subnet(255, 255, 255, 0); // subnet mask of the local network
@@ -18,11 +19,11 @@ IPAddress dns(1, 1, 1, 1);          // DNS server address
 */
 
 #define DRYNESS_ALARM_VALUE 600	    // the higher the value, the dryer the soil (water ~300, air ~730)
-#define SENSOR_POWER_PIN D1
+#define SENSOR_POWER_PIN D8
 //#define SLEEP_USECS powerManager.MAX_SLEEP
 
 ESPPowerManager powerManager(ssid, password, ip, gateway, subnet, dns);
-HTTPClient http;
+HTTPClient discordHttp, gSheetsHttp;
 WiFiClientSecure clientSecure;
 
 boolean notifyEvent(int value) {
@@ -31,13 +32,12 @@ boolean notifyEvent(int value) {
 	clientSecure.setInsecure();
 	boolean isSuccess = false;
 
-	if (http.begin(clientSecure, webhook_url)) {
-		http.addHeader("Content-Type", "application/json");
+	if (discordHttp.begin(clientSecure, discord_webhook_url)) {
+		discordHttp.addHeader("Content-Type", "application/json");
 
-		// TODO: add TS to content
 		String payload = "{ \"content\": \" Avocado needs a drink! Value: [" + String(value) + "]\" }";
-		int httpCode = http.POST(payload);
-		http.end();
+		int httpCode = discordHttp.POST(payload);
+		discordHttp.end();
 
 		if (httpCode > 0) {
 			if (httpCode == 200 || httpCode == 204) {
@@ -51,10 +51,24 @@ boolean notifyEvent(int value) {
 	return isSuccess;
 }
 
+// for setting up google sheets api follow this manual:
+// https://github.com/StorageB/Google-Sheets-Logging/blob/master/README.md
+void spreadsheetValueLog(int value) {
+	gSheetsHttp.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+	if (gSheetsHttp.begin(clientSecure, sheets_webapp_url)) {
+			gSheetsHttp.addHeader("Content-Type", "application/json");
+
+			// TODO: extract sheet name to param
+			String payload = "{ \"sheet_name\": \"Sheet1\", \"values\": \"" + String(value) + "\" }";
+			gSheetsHttp.POST(payload);
+			gSheetsHttp.end();
+	}
+}
+
 void setup() {
 	//Serial.begin(115200);
-	powerManager.beginBasicMode();
-	//powerManager.beginEDSMode(54545, 12);
+	//powerManager.beginBasicMode();
+	powerManager.beginEDSMode(48317, 12);
 
 	pinMode(SENSOR_POWER_PIN, OUTPUT);
 	digitalWrite(SENSOR_POWER_PIN, HIGH);
@@ -66,12 +80,12 @@ void setup() {
 	powerManager.setupWifi();
 
 	if (WiFi.status() == WL_CONNECTED) {
-		if (!notifyEvent(currentValue)) {
+		if (currentValue > DRYNESS_ALARM_VALUE && !notifyEvent(currentValue)) {
 			// TODO: log error
 			//Serial.println("notify ERROR");
 		}
 
-		// TODO: spreadsheet log
+		spreadsheetValueLog(currentValue);
 	}
 
 	//powerManager.deepSleep(SLEEP_USECS);
