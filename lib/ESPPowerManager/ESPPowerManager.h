@@ -90,6 +90,7 @@ class ESPPowerManager {
 		IPAddress subnet;
 		uint32_t calculateCRC32(const uint8_t *data, size_t length);
 		boolean isRouterDataValid();
+		void resetWifiState();
 		void sleepWifi();
 		void turnOffWifi();
 		void wakeWifi();

@@ -50,6 +50,7 @@ void ESPPowerManager::setupWifi(u_int64_t sleepMicroSecs) {
 
 	WiFi.mode(WIFI_STA);
 	WiFi.config(ip, gateway, subnet, dns);
+	resetWifiState();
 
 	if (isValidRouterData) {
 		// saved data ok - quick connect
@@ -62,17 +63,10 @@ void ESPPowerManager::setupWifi(u_int64_t sleepMicroSecs) {
 	while (WiFi.status() != WL_CONNECTED) {
 		retries++;
 
-		if (retries == 100 && isValidRouterData) {
+		if (retries % 50 == 0) {
 			// quick connect is not working, reset WiFi and try regular connection
-			WiFi.disconnect();
-			delay(10);
-			WiFi.forceSleepBegin();
-			delay(10);
-			WiFi.forceSleepWake();
-			delay(10);
+			resetWifiState();
 			WiFi.begin(ssid, password);
-
-			isValidRouterData = false;	// saved data out of date - flag for invalid
 		}
 
 		if (retries == 300) {
@@ -160,4 +154,10 @@ void ESPPowerManager::turnOffWifi() {
 	WiFi.disconnect(true);
 	delay(1);
 	WiFi.mode(WIFI_OFF);
+}
+
+void ESPPowerManager::resetWifiState() {
+	WiFi.disconnect();
+	WiFi.forceSleepBegin();
+	WiFi.forceSleepWake();
 }
