@@ -77,7 +77,7 @@ void setup() {
 	digitalWrite(SENSOR_POWER_PIN, LOW);
 
 	//powerManager.setupWifi(SLEEP_USECS);
-	powerManager.setupWifi();
+	powerManager.setupWifi();  // EDS
 
 	if (WiFi.status() == WL_CONNECTED) {
 		if (currentValue > DRYNESS_ALARM_VALUE && !notifyEvent(currentValue)) {
@@ -89,7 +89,7 @@ void setup() {
 	}
 
 	//powerManager.deepSleep(SLEEP_USECS);
-	powerManager.deepSleep();
+	powerManager.deepSleep();  // EDS
 }
 
 void loop() {
