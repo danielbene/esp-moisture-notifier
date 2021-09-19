@@ -67,6 +67,8 @@ void ESPPowerManager::setupWifi(u_int64_t sleepMicroSecs) {
 			// quick connect is not working, reset WiFi and try regular connection
 			resetWifiState();
 			WiFi.begin(ssid, password);
+
+			isValidRouterData = false;
 		}
 
 		if (retries == 300) {
