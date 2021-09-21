@@ -72,11 +72,12 @@ void ESPPowerManager::setupWifi(u_int64_t sleepMicroSecs) {
 		}
 
 		if (retries == 300) {
-			// after 15 sec go to sleep
+			// after 30 sec go to sleep
 			deepSleep(sleepMicroSecs);
 		}
 
-		delay(50);
+		// faster loop caused deadlock (bcause regular conn takes about 3 sec - quick connect is ~200ms)
+		delay(100);
 	}
 
 	if (!isValidRouterData){

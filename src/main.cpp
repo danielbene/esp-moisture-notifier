@@ -68,7 +68,7 @@ void spreadsheetValueLog(int value) {
 void setup() {
 	//Serial.begin(115200);
 	//powerManager.beginBasicMode();
-	powerManager.beginEDSMode(48317, 12);
+	powerManager.beginEDSMode(48317, 4);  // TODO: increase interval after test phase
 
 	pinMode(SENSOR_POWER_PIN, OUTPUT);
 	digitalWrite(SENSOR_POWER_PIN, HIGH);
@@ -81,8 +81,7 @@ void setup() {
 
 	if (WiFi.status() == WL_CONNECTED) {
 		if (currentValue > DRYNESS_ALARM_VALUE && !notifyEvent(currentValue)) {
-			// TODO: log error
-			//Serial.println("notify ERROR");
+			// TODO: log error (maybe to spreadsheet?)
 		}
 
 		spreadsheetValueLog(currentValue);
