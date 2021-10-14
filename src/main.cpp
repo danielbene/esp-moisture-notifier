@@ -18,6 +18,7 @@ IPAddress subnet(255, 255, 255, 0); // subnet mask of the local network
 IPAddress dns(1, 1, 1, 1);          // DNS server address
 */
 
+#define MOIST_DEBUG false
 #define DRYNESS_ALARM_VALUE 600	    // the higher the value, the dryer the soil (water ~300, air ~730)
 #define SENSOR_POWER_PIN D8
 //#define SLEEP_USECS powerManager.MAX_SLEEP
@@ -27,11 +28,7 @@ HTTPClient discordHttp, gSheetsHttp;
 WiFiClientSecure clientSecure;
 
 boolean notifyEvent(int value) {
-	// TODO: cert - https://www.youtube.com/watch?v=Wm1xKj4bKsY
-	// https://github.com/maditnerd/discord_test/blob/master/discord_test_esp8266/discord.h
-	clientSecure.setInsecure();
 	boolean isSuccess = false;
-
 	if (discordHttp.begin(clientSecure, discord_webhook_url)) {
 		discordHttp.addHeader("Content-Type", "application/json");
 
@@ -46,6 +43,8 @@ boolean notifyEvent(int value) {
 				isSuccess = false;
 			}
 		}
+
+		if (MOIST_DEBUG && !isSuccess) Serial.println("NOTIFY FAILED: " + String(httpCode));
 	}
 
 	return isSuccess;
@@ -54,19 +53,31 @@ boolean notifyEvent(int value) {
 // for setting up google sheets api follow this manual:
 // https://github.com/StorageB/Google-Sheets-Logging/blob/master/README.md
 void spreadsheetValueLog(int value) {
+	if (MOIST_DEBUG) Serial.println("SENDING SPREADSHEET");
+
 	gSheetsHttp.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 	if (gSheetsHttp.begin(clientSecure, sheets_webapp_url)) {
 			gSheetsHttp.addHeader("Content-Type", "application/json");
 
 			// TODO: extract sheet name to param
 			String payload = "{ \"sheet_name\": \"Sheet1\", \"values\": \"" + String(value) + "\" }";
-			gSheetsHttp.POST(payload);
+			int httpCode = gSheetsHttp.POST(payload);
+			if (MOIST_DEBUG) {
+				if (httpCode == 200 || httpCode == 204) {
+					Serial.println("SPREADSHEET SUCCESS");
+				} else {
+					Serial.println("SPREADSHEET PAYLOAD FAILED: " + String(httpCode));
+				}
+			}
+
 			gSheetsHttp.end();
+	} else if (MOIST_DEBUG) {
+		Serial.println("SPREADSHEET BEGIN FAILED");
 	}
 }
 
 void setup() {
-	//Serial.begin(115200);
+	if (MOIST_DEBUG) Serial.begin(115200);
 	//powerManager.beginBasicMode();
 	powerManager.beginEDSMode(48317, 4);  // TODO: increase interval after test phase
 
@@ -80,12 +91,24 @@ void setup() {
 	powerManager.setupWifi();  // EDS
 
 	if (WiFi.status() == WL_CONNECTED) {
+		if (MOIST_DEBUG) {
+			Serial.println("WIFI OK - STARTING WORK");
+			Serial.println("CURRENT VALUE: " + String(currentValue));
+		}
+
+		// TODO: cert - https://www.youtube.com/watch?v=Wm1xKj4bKsY
+		// https://github.com/maditnerd/discord_test/blob/master/discord_test_esp8266/discord.h
+		// https://forum.arduino.cc/t/esp8266-httpclient-library-for-https/495245
+		clientSecure.setInsecure();
+
 		if (currentValue > DRYNESS_ALARM_VALUE && !notifyEvent(currentValue)) {
 			// TODO: log error (maybe to spreadsheet?)
 		}
 
 		spreadsheetValueLog(currentValue);
 	}
+
+	if (MOIST_DEBUG) Serial.println("CYCLE END - GOING TO SLEEP");
 
 	//powerManager.deepSleep(SLEEP_USECS);
 	powerManager.deepSleep();  // EDS

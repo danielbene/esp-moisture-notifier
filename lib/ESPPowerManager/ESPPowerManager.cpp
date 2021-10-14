@@ -19,6 +19,7 @@ void ESPPowerManager::beginEDSMode(uint16_t checksumNumber, uint16_t sleepHours)
 	isEDSMode = true;
 
 	if (ESP.rtcUserMemoryRead(DS_CYCLE_MEMORY_OFFSET, (uint32_t*)&extendedDSData, sizeof(extendedDSData))) {
+		// Serial.println("EDS COUNTER: " + String(extendedDSData.cycleCounter));
 		if (extendedDSData.manualChecksum != checksumNumber) {
 			// first run, or memory got corrupted
 			extendedDSData.manualChecksum = checksumNumber;
