@@ -19,8 +19,9 @@ So basically both of the events is a simple rest api call without auth, data mod
 
 Calibration is key when using a moisture sensor. The values differ based on many aspects (soil denseness, saltness, sensor position, depth etc.). Be sure to find out the proper value for the `DRYNESS_ALARM_VALUE` before you trust the plant's life on the system.
 
-PRO TIP: you can make the sensor's pcb sides, and smds waterproof with nail polish.
+PRO TIP: you can make the sensor's pcb sides, and smds waterproof with nail polish. | You can extend the battery's lifespan by removing the LED from the microcontroller.
 
-## power-manager
+## Update - 2022.11.13
 
-The project started as a simple moisture sensor, but that power manager lib was born with it. That has so much value compared to the basic sensor's code. Nvm I just keep that here at the moment, and we will see where to go with it.
+The rework/redesign was really successful. The original version drained the 18650 cell with 8 hour measurement cycles in about a month. It really was not optimal...  
+The new version was able to go a whole year with 4 hour measurement cycles from the same 18650 battery cell. So, much longer operating time, with more frequent measurements. (Its still not drained after 13 months when writing this, we will see how long it can go.)
